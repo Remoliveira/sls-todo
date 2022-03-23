@@ -1,0 +1,51 @@
+org: remoog
+app: aws-todo
+service: aws-todo-rocket
+frameworkVersion: "2 || 3"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: "20201221"
+  environment:
+    DYNAMODB_TABLE: Todo
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:Scan
+      Resource: "arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+resources:
+  Resources:
+    TodoDynamoTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: user_id
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+functions:
+  post:
+    handler: post.postFunc
+    events:
+      - httpApi:
+          path: /todos/{userid}
+          method: post
+  get:
+    handler: get.getFunc
+    events:
+      - httpApi:
+          path: /todos/{userid}
+          method: get
